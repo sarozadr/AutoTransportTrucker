@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vehicle Pickup Tracker</title>
+  <style>
+    /* ── RESET & BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(160deg, #e0f2fe 0%, #f3f6f4 100%);
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      border-bottom: 4px solid #7aab90;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo-icon {
+      background: #fff;
+      border-radius: 10px;
+      width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 32px; height: 32px; fill: #2563eb; }
+    .logo-text h1 { font-size: 1.5rem; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+    .logo-text p  { font-size: 0.8rem; color: #bfdbfe; margin-top: 2px; }
+
+    /* ── HERO BAND ── */
+    .hero {
+      background: #7aab90;
+      text-align: center;
+      padding: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    /* ── MAIN CONTENT ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 64px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: #ffffff;
+      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 12px 40px rgba(37,99,235,0.10);
+    }
+    .card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1e293b;
+    }
+    .card p.subtitle {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    /* ── FORM ── */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #2563eb;
+      margin-bottom: 8px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #f0f9ff;
+      border: 2px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      color: #1e293b;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]::placeholder { color: #93c5fd; }
+    input[type="text"]:focus { border-color: #2563eb; }
+    button.search-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 22px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    button.search-btn:hover  { background: #1d4ed8; }
+    button.search-btn:active { transform: scale(0.97); }
+    .hint {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+
+    /* ── RESULTS ── */
+    #results { margin-top: 32px; }
+
+    .status-box {
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .status-box.error   { background: #fef2f2; border: 1px solid #fca5a5; color: #dc2626; }
+    .status-box.loading { background: #f0f9ff; border: 1px solid #bfdbfe; color: #64748b; text-align: center; }
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 3px solid #bfdbfe;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      background: #ffffff;
+      border: 1px solid #c6d8cd;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .result-header {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .result-header svg { width: 22px; height: 22px; fill: #fff; flex-shrink: 0; }
+    .result-header span { font-weight: 700; font-size: 1rem; color: #fff; }
+
+    .result-body { padding: 20px; }
+
+    .pickup-banner {
+      background: linear-gradient(135deg, #f3f6f4, #e8f0ec);
+      border: 2px solid #7aab90;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .pickup-banner .icon { font-size: 2rem; flex-shrink: 0; }
+    .pickup-banner .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #5a8a70; margin-bottom: 4px; }
+    .pickup-banner .date  { font-size: 1.25rem; font-weight: 700; color: #3d6b53; }
+    .pickup-banner .time  { font-size: 0.9rem; color: #527a63; margin-top: 2px; }
+
+    .vehicle-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .veh-item { background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 14px; }
+    .veh-item .veh-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; margin-bottom: 4px; }
+    .veh-item .veh-value { font-size: 1rem; font-weight: 600; color: #1e293b; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; }
+      .vehicle-grid { grid-template-columns: 1fr; }
+      .input-row { flex-direction: column; }
+      button.search-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     ⚙️  CONFIGURATION — Edit these 3 values
+     ═══════════════════════════════════════════ -->
+<script>
+  // 1. Your Google Sheets API Key
+  //    Get one at: https://console.cloud.google.com → APIs & Services → Credentials
+  const API_KEY = "AIzaSyCLBi1WOiku22hClDellioPSPy354CgQHs";
+
+  // 2. Your Google Spreadsheet ID
+  //    Find it in the sheet URL: docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
+  const SPREADSHEET_ID = "1X_hY95OzAUFi_SRgY8M9nAk4KpQDZRiVH5pcJ_-T3Ok";
+
+  // 3. The name of the sheet tab
+  const SHEET_NAME = "Driver's List";
+
+  // 4. Your company name (shown in the header)
+  const COMPANY_NAME = "Auto Transport Tracker";
+</script>
+<!-- ═══════════════════════════════════════════ -->
+
+<header>
+  <div class="logo-icon">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+    </svg>
+  </div>
+  <div class="logo-text">
+    <h1 id="company-name">Auto Transport Tracker</h1>
+    <p>Vehicle Pickup Status Portal</p>
+  </div>
+</header>
+
+<div class="hero">🚗 &nbsp; Real-time vehicle pickup information &nbsp; 🚗</div>
+
+<main>
+  <div class="card">
+    <h2>Track Your Vehicle</h2>
+    <p class="subtitle">Enter your Lot Number or VIN to see pickup details.</p>
+
+    <label for="searchInput">Lot Number or VIN</label>
+    <div class="input-row">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="e.g. 12345 or 1HGBH41JXMN109186"
+        autocomplete="off"
+        autocapitalize="characters"
+      />
+      <button class="search-btn" onclick="lookupVehicle()">Search</button>
+    </div>
+    <p class="hint">Search is not case-sensitive.</p>
+    <p style="margin-top:12px;font-size:0.82rem;color:#64748b;background:#f0f9ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;">
+      <strong style="color:#2563eb;">Note:</strong> Information is only available for shipments starting from March 29, 2026.
+    </p>
+
+    <div id="results"></div>
+  </div>
+</main>
+
+<footer>
+  &copy; <span id="year"></span> <span class="company-footer"></span> &mdash; Vehicle Pickup Tracker &nbsp;|&nbsp; For assistance, contact your transport coordinator.
+</footer>
+
+<script>
+  // Set dynamic values
+  document.getElementById('company-name').textContent = COMPANY_NAME;
+  document.querySelectorAll('.company-footer').forEach(el => el.textContent = COMPANY_NAME);
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Allow pressing Enter to search
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') lookupVehicle();
+  });
+
+  async function lookupVehicle() {
+    const query = document.getElementById('searchInput').value.trim().toUpperCase();
+    const resultsDiv = document.getElementById('results');
+
+    if (!query) {
+      resultsDiv.innerHTML = `<div class="status-box error">⚠️ Please enter a Lot Number or VIN.</div>`;
+      return;
+    }
+
+    // Validate configuration
+    if (API_KEY === "YOUR_GOOGLE_API_KEY_HERE" || SPREADSHEET_ID === "YOUR_SPREADSHEET_ID_HERE") {
+      resultsDiv.innerHTML = `<div class="status-box error">
+        ⚙️ <strong>Setup required:</strong> Please open this file in a text editor and replace
+        <code>YOUR_GOOGLE_API_KEY_HERE</code> and <code>YOUR_SPREADSHEET_ID_HERE</code>
+        with your actual values. See the setup instructions document for help.
+      </div>`;
+      return;
+    }
+
+    // Show loading
+    resultsDiv.innerHTML = `<div class="status-box loading"><span class="spinner"></span> Looking up vehicle...</div>`;
+
+    try {
+      // Fetch all data from Google Sheets
+      // Properly escape sheet names that contain single quotes (e.g. "Driver's List")
+      const safeName = SHEET_NAME.includes("'")
+        ? `'${SHEET_NAME.replace(/'/g, "''")}'`
+        : SHEET_NAME;
+      const range = encodeURIComponent(`${safeName}!A:AZ`); // wide range — covers 50+ columns
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const rows = data.values;
+
+      if (!rows || rows.length < 2) {
+        resultsDiv.innerHTML = `<div class="status-box error">⚠️ No data found in the spreadsheet.</div>`;
+        return;
+      }
+
+      // ── AUTO-DETECT the real header row ──
+      // Scan first 12 rows and find the one that looks like column headers:
+      // must have the most non-empty cells AND contain key column words
+      const headerKeywords = ['vin','lot','vehicle','order','buyer','no.','no '];
+      let headerRowIdx = 0;
+      let bestScore = -1;
+      for (let r = 0; r < Math.min(12, rows.length); r++) {
+        const row = rows[r] || [];
+        const nonEmpty = row.filter(c => c && c.toString().trim()).length;
+        const rowText  = row.join(' ').toLowerCase();
+        const hasKeys  = headerKeywords.filter(k => rowText.includes(k)).length;
+        const score    = nonEmpty + (hasKeys * 5); // weight keyword matches heavily
+        if (score > bestScore) { bestScore = score; headerRowIdx = r; }
+      }
+
+      // Also grab the top section rows (above headers) to find global Pickup Date
+      const topSection = rows.slice(0, headerRowIdx).map(r => r || []);
+      let globalPickupDate = '';
+      for (const r of topSection) {
+        for (let i = 0; i < r.length - 1; i++) {
+          const cell = (r[i] || '').toString().toLowerCase();
+          if (cell.includes('pickup date') || cell.includes('p/u date')) {
+            globalPickupDate = (r[i+1] || '').toString().trim();
+          }
+        }
+      }
+
+      const headerRow  = rows[headerRowIdx];
+      // Normalize headers: remove newlines and extra spaces (handles text-wrapped cells)
+      const headers    = headerRow.map(h => (h || '').toString().trim().toLowerCase().replace(/\s+/g, ' '));
+      const dataRows   = rows.slice(headerRowIdx + 1); // rows below the headers
+
+      // ── FIND matching row — search every cell ──
+      // Supports:
+      //   - Exact match: "432074/ KNDNB4H36R6432074" === "432074/ KNDNB4H36R6432074"
+      //   - Order ID only: "432074" matches "432074/ KNDNB4H36R6432074"
+      //   - VIN only: "KNDNB4H36R6432074" matches "432074/ KNDNB4H36R6432074"
+      //   - Lot only: "87292455" matches "87292455/12345"
+      const match = dataRows.find(row =>
+        row.some(cell => {
+          if (!cell) return false;
+          const val = cell.toString().trim().toUpperCase();
+          // Exact match
+          if (val === query) return true;
+          // If cell contains "/", check each part separately
+          if (val.includes('/')) {
+            const parts = val.split('/').map(p => p.trim());
+            if (parts.some(p => p === query)) return true;
+          }
+          return false;
+        })
+      );
+
+      if (!match) {
+        // Show helpful debug so issues can be identified
+        const sample = dataRows[0] ? dataRows[0].slice(0, 5).join(' | ') : 'none';
+        resultsDiv.innerHTML = `<div class="status-box error">
+          🔍 No vehicle found for <strong>"${query}"</strong>.<br>
+          Please double-check your Lot Number or VIN and try again.<br><br>
+          <small style="opacity:0.6">Headers at row ${headerRowIdx+1}: ${headerRow.slice(0,5).join(', ')}<br>
+          First data row: ${sample}</small>
+        </div>`;
+        return;
+      }
+
+      // ── DETECT key columns from real headers ──
+      // Primary: scan the detected header row
+      const findCol = (...kws) => {
+        for (const kw of kws) {
+          const normKw = kw.toLowerCase().replace(/\s+/g, ' ');
+          const i = headers.findIndex(h => h.includes(normKw));
+          if (i !== -1) return i;
+        }
+        return -1;
+      };
+
+      // Extended column search: scan header area first, then full sheet if needed.
+      // When found in a far-away row, verify the column has date-like data (not booleans).
+      const findColAnyRowDebug = (...kws) => {
+        // 1. Try the detected header row first
+        const direct = findCol(...kws);
+        if (direct !== -1) return { idx: direct, foundRow: headerRowIdx, foundCol: direct };
+
+        // 2. Scan only header area (rows 0 to headerRowIdx+3)
+        const nearEnd = Math.min(headerRowIdx + 4, rows.length);
+        for (const kw of kws) {
+          const normKw = kw.toLowerCase().replace(/\s+/g, ' ');
+          for (let ri = 0; ri < nearEnd; ri++) {
+            const row = rows[ri] || [];
+            for (let ci = 0; ci < row.length; ci++) {
+              const cell = (row[ci] || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+              if (cell === normKw || cell.includes(normKw)) return { idx: ci, foundRow: ri, foundCol: ci };
+            }
+          }
+        }
+
+        // 3. Scan all rows, but when found, verify this column has date-like values
+        //    If not (e.g. all FALSE/TRUE), try the NEXT column (foundCol+1)
+        for (const kw of kws) {
+          const normKw = kw.toLowerCase().replace(/\s+/g, ' ');
+          for (let ri = 0; ri < rows.length; ri++) {
+            const row = rows[ri] || [];
+            for (let ci = 0; ci < row.length; ci++) {
+              const cell = (row[ci] || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+              if (cell === normKw || cell.includes(normKw)) {
+                // Found it — now verify: does this column have date-like values in data rows?
+                const sampleValues = dataRows.slice(0, 10).map(r => (r[ci] || '').toString().trim());
+                const hasDate = sampleValues.some(v => /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(v));
+                if (hasDate) return { idx: ci, foundRow: ri, foundCol: ci };
+                // Not date-like — try next column (ci+1), which is likely the actual data column
+                const sampleNext = dataRows.slice(0, 10).map(r => (r[ci+1] || '').toString().trim());
+                const nextHasDate = sampleNext.some(v => /\d{1,2}\/\d{1,2}\/\d{2,4}/.test(v));
+                if (nextHasDate) return { idx: ci + 1, foundRow: ri, foundCol: ci };
+                // Still return the original column as last resort
+                return { idx: ci, foundRow: ri, foundCol: ci };
+              }
+            }
+          }
+        }
+        return { idx: -1, foundRow: -1, foundCol: -1 };
+      };
+      const findColAnyRow = (...kws) => findColAnyRowDebug(...kws).idx;
+
+      // ── ONLY these specific columns ──
+      const vinIdx      = findCol('vin', 'order id');
+      const buyerIdx    = findCol('buyer');
+      const lotIdx      = findCol('lot');
+      const vehicleIdx  = findCol('vehicle');
+      const destIdx     = findCol('cli/dest', 'cli dest', 'dest');
+      const auctionIdx  = findCol('p/u- auction', 'p/u auction', 'auction', 'p/u-');
+      // Use extended search for Pickup Date APP — its header may be beyond the truncated header row
+      let perDateIdx  = findColAnyRow('pickup date app');
+      let statusIdx   = findColAnyRow('status');
+
+      // SAFETY CHECK: if perDateIdx points to a non-date value (like FALSE/TRUE),
+      // scan adjacent columns to find the actual date column
+      if (perDateIdx !== -1) {
+        const testVal = (match[perDateIdx] || '').toString().trim();
+        if (!/\d{1,2}\/\d{1,2}/.test(testVal)) {
+          // Current column doesn't have a date — check columns around it
+          for (let offset = 1; offset <= 3; offset++) {
+            const tryIdx = perDateIdx + offset;
+            const tryVal = (match[tryIdx] || '').toString().trim();
+            if (/\d{1,2}\/\d{1,2}/.test(tryVal)) {
+              perDateIdx = tryIdx;
+              break;
+            }
+          }
+        }
+      }
+
+      // SAFETY CHECK for status: if it looks like a date, shift to next column
+      if (statusIdx !== -1 && /\d{1,2}\/\d{1,2}/.test((match[statusIdx] || '').toString())) {
+        statusIdx = statusIdx + 1;
+      }
+
+      const get = i => (i !== -1 && match[i]) ? match[i].toString().trim() : '';
+
+      const vinVal      = get(vinIdx);
+      const buyerVal    = get(buyerIdx);
+      const lotVal      = get(lotIdx);
+      const vehicleVal  = get(vehicleIdx);
+      const destVal     = get(destIdx);
+      const auctionVal  = get(auctionIdx);
+      const perDateDebug = findColAnyRowDebug('pickup date app');
+      perDateDebug.finalIdx = perDateIdx; // after safety check
+      const perDate     = get(perDateIdx);
+      const pickDate    = perDate || '—';
+      const statusVal   = get(statusIdx);
+      const vehicleTitle = vehicleVal || vinVal || query;
+
+      // Helper: render a field card, skip if empty
+      const card = (label, val, wide = false) => val
+        ? `<div class="veh-item" style="${wide ? 'grid-column:1/-1;' : ''}">
+             <div class="veh-label">${label}</div>
+             <div class="veh-value" style="font-size:0.9rem;word-break:break-word;">${val}</div>
+           </div>`
+        : '';
+
+
+      resultsDiv.innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <svg viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg>
+            <span>${vehicleTitle}</span>
+            ${statusVal ? `<span style="margin-left:auto;background:rgba(255,255,255,0.25);padding:3px 12px;border-radius:20px;font-size:0.78rem;">${statusVal}</span>` : ''}
+          </div>
+          <div class="result-body">
+
+            <!-- Pickup Date Banner -->
+            <div class="pickup-banner">
+              <div class="icon">📅</div>
+              <div>
+                <div class="label">Pickup Date</div>
+                <div class="date">${pickDate}</div>
+                ${auctionVal ? `<div class="time">📍 ${auctionVal}</div>` : ''}
+              </div>
+            </div>
+
+            <!-- Exact fields requested -->
+            <div class="vehicle-grid">
+              ${card('Order ID / VIN', vinVal, true)}
+              ${card('Buyer', buyerVal)}
+              ${card('Lot #', lotVal)}
+              ${card('Vehicle', vehicleVal, true)}
+              ${card('Cli/Dest.', destVal, true)}
+              ${card('P/U- Auction', auctionVal, true)}
+            </div>
+
+
+          </div>
+        </div>
+      `;
+
+    } catch (err) {
+      resultsDiv.innerHTML = `<div class="status-box error">
+        ❌ <strong>Error connecting to Google Sheets:</strong><br>${err.message}<br><br>
+        Please check your API Key and Spreadsheet ID in the configuration section.
+      </div>`;
+      console.error(err);
+    }
+  }
+</script>
+
+</body>
+</html>
